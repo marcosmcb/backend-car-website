@@ -1,5 +1,6 @@
 package com.udacity.vehicles.config;
 
+import com.google.common.base.Predicates;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import springfox.documentation.builders.PathSelectors;
@@ -21,19 +22,19 @@ public class SwaggerConfig {
         return new Docket(DocumentationType.SWAGGER_2)
                 .select()
                 .apis(RequestHandlerSelectors.any())
-                .paths(PathSelectors.any())
+                .paths(Predicates.not(PathSelectors.regex("/error"))) // Exclude Spring error controllers
                 .build()
                 .apiInfo(apiInfo());
     }
 
     private ApiInfo apiInfo() {
         return new ApiInfo(
-                "Vehicle REST API",
-                "This API let you manage your vehicles",
+                "CarWebsite REST API",
+                "REST API to maintain vehicle data and to provide a complete view of vehicle details including price and address.",
                 "1.0",
                 "http://www.udacity.com/tos",
-                new Contact("Udacious Student", "www.udacity.com", "myeaddress@udacity.com"),
-                "License of API", "http://www.udacity.com/license", Collections.emptyList());
+                new Contact("Marcos Cavalcante", "http://localhost:8585/swagger-ui.html", "carwebsite@localhost.com"),
+                "License of API", "http://localhost:8585/swagger-ui.html", Collections.emptyList());
     }
 
 }

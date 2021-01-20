@@ -4,13 +4,11 @@ package com.udacity.vehicles.api;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import static org.hamcrest.Matchers.*;
 import com.udacity.vehicles.client.maps.MapsClient;
 import com.udacity.vehicles.client.prices.PriceClient;
 import com.udacity.vehicles.domain.Condition;
@@ -77,7 +75,7 @@ public class CarControllerTest {
      * @throws Exception when car creation fails in the system
      */
     @Test
-    public void createCar() throws Exception {
+    public void shouldCreateCar() throws Exception {
         Car car = getCar();
         mvc.perform(
                 post(new URI("/cars"))
@@ -92,7 +90,7 @@ public class CarControllerTest {
      * @throws Exception if the read operation of the vehicle list fails
      */
     @Test
-    public void listCars() throws Exception {
+    public void shouldListCars() throws Exception {
         /**
          * TODO: Add a test to check that the `get` method works by calling
          *   the whole list of vehicles. This should utilize the car from `getCar()`
@@ -107,6 +105,34 @@ public class CarControllerTest {
                 .andDo(print());
 
         verify(carService, times(1)).list();
+        verify(carService, times(0)).findById(any());
+    }
+
+    /**
+     * Tests the update of a single car by ID.
+     * @throws Exception if the update operation of a vehicle fails
+     */
+
+    @Test
+    public void shouldUpdateCar() throws Exception {
+        Car updatedCar = getUpdatedCar();
+        when(carService.save(any())).thenReturn(updatedCar);
+
+        mvc
+                .perform(put(new URI("/cars/" + ID))
+                    .content(json.write(updatedCar).getJson())
+                    .contentType(MediaType.APPLICATION_JSON_UTF8)
+                    .accept(MediaType.APPLICATION_JSON_UTF8))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ID))
+                .andExpect(jsonPath("$.condition").value(Condition.NEW.toString()))
+                .andExpect(jsonPath("$.details.model").value(updatedCar.getDetails().getModel()))
+                .andExpect(jsonPath("$.location.lat").value(updatedCar.getLocation().getLat()))
+                .andExpect(jsonPath("$.location.lon").value(updatedCar.getLocation().getLon()))
+                .andDo(print());
+
+        verify(carService, times(1)).save(any());
+        verify(carService, times(0)).list();
         verify(carService, times(0)).findById(any());
     }
 
@@ -136,7 +162,7 @@ public class CarControllerTest {
      * @throws Exception if the delete operation of a vehicle fails
      */
     @Test
-    public void deleteCar() throws Exception {
+    public void shouldDeleteCar() throws Exception {
         /**
          * TODO: Add a test to check whether a vehicle is appropriately deleted
          *   when the `delete` method is called from the Car Controller. This
@@ -149,6 +175,21 @@ public class CarControllerTest {
         verify(carService, times(0)).list();
         verify(carService, times(0)).findById(any());
         verify(carService, times(1)).delete(ID);
+    }
+
+
+    /**
+     * Creates an example Car object for use in testing.
+     * @return an example Car Updated object
+     */
+    private Car getUpdatedCar() {
+        Car updatedCar = getCar();
+        updatedCar.setId(ID);
+        updatedCar.setLocation(new Location(140.1234, -173.1234));
+        updatedCar.getDetails().setModel("La Ferrari");
+        updatedCar.setCondition(Condition.NEW);
+
+        return updatedCar;
     }
 
     /**

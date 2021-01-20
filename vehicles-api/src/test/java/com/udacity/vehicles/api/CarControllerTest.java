@@ -1,11 +1,16 @@
 package com.udacity.vehicles.api;
 
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import static org.hamcrest.Matchers.*;
 import com.udacity.vehicles.client.maps.MapsClient;
 import com.udacity.vehicles.client.prices.PriceClient;
 import com.udacity.vehicles.domain.Condition;
@@ -38,6 +43,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureJsonTesters
 public class CarControllerTest {
 
+    private static final long ID = 10L;
+
     @Autowired
     private MockMvc mvc;
 
@@ -59,7 +66,7 @@ public class CarControllerTest {
     @Before
     public void setup() {
         Car car = getCar();
-        car.setId(1L);
+        car.setId(ID);
         given(carService.save(any())).willReturn(car);
         given(carService.findById(any())).willReturn(car);
         given(carService.list()).willReturn(Collections.singletonList(car));
@@ -91,7 +98,16 @@ public class CarControllerTest {
          *   the whole list of vehicles. This should utilize the car from `getCar()`
          *   below (the vehicle will be the first in the list).
          */
+        mvc.perform(get(new URI("/cars")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.carList").isArray())
+                .andExpect(jsonPath("$._embedded.carList", hasSize(1)))
+                .andExpect(jsonPath("$._embedded.carList[0].id").value(ID))
+                .andExpect(jsonPath("$._embedded.carList[0].condition").value(Condition.USED.toString()))
+                .andDo(print());
 
+        verify(carService, times(1)).list();
+        verify(carService, times(0)).findById(any());
     }
 
     /**
@@ -104,6 +120,15 @@ public class CarControllerTest {
          * TODO: Add a test to check that the `get` method works by calling
          *   a vehicle by ID. This should utilize the car from `getCar()` below.
          */
+        mvc
+                .perform(get(new URI("/cars/" + ID)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ID))
+                .andExpect(jsonPath("$.condition").value(Condition.USED.toString()))
+                .andDo(print());
+
+        verify(carService, times(0)).list();
+        verify(carService, times(1)).findById(ID);
     }
 
     /**
@@ -117,6 +142,13 @@ public class CarControllerTest {
          *   when the `delete` method is called from the Car Controller. This
          *   should utilize the car from `getCar()` below.
          */
+        mvc
+                .perform(delete(new URI("/cars/" + ID)))
+                .andExpect(status().isNoContent())
+                .andDo(print());
+        verify(carService, times(0)).list();
+        verify(carService, times(0)).findById(any());
+        verify(carService, times(1)).delete(ID);
     }
 
     /**
